@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"agent_v2/config"
@@ -18,6 +19,42 @@ import (
 type amapRuntime struct {
 	cfg        config.AmapConfig
 	httpClient *http.Client
+	limiter    *amapRateLimiter
+}
+
+type amapRateLimiter struct {
+	mu       sync.Mutex
+	interval time.Duration
+	next     time.Time
+}
+
+func newAmapRateLimiter(qps float64) *amapRateLimiter {
+	if qps <= 0 {
+		return nil
+	}
+	return &amapRateLimiter{
+		interval: time.Duration(float64(time.Second) / qps),
+	}
+}
+
+func (rl *amapRateLimiter) wait(ctx context.Context) error {
+	if rl == nil {
+		return nil
+	}
+	rl.mu.Lock()
+	now := time.Now()
+	if now.Before(rl.next) {
+		rl.mu.Unlock()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(rl.next.Sub(now)):
+		}
+		rl.mu.Lock()
+	}
+	rl.next = time.Now().Add(rl.interval)
+	rl.mu.Unlock()
+	return nil
 }
 
 type AmapResponse struct {
@@ -70,6 +107,7 @@ func newAmapRuntime(cfg config.AmapConfig) *amapRuntime {
 		httpClient: &http.Client{
 			Timeout: time.Duration(cfg.TimeoutSeconds) * time.Second,
 		},
+		limiter: newAmapRateLimiter(cfg.QPS),
 	}
 }
 
@@ -92,6 +130,10 @@ func (r *amapRuntime) get(ctx context.Context, endpoint string, q url.Values, in
 
 	requestURL, err := r.buildURL(endpoint, q)
 	if err != nil {
+		return AmapResponse{OK: false, Endpoint: endpoint}, err
+	}
+
+	if err := r.limiter.wait(ctx); err != nil {
 		return AmapResponse{OK: false, Endpoint: endpoint}, err
 	}
 
@@ -175,6 +217,11 @@ func (r *amapRuntime) staticMap(ctx context.Context, in AmapStaticMapInput) (Ama
 	}
 	if !in.Validate {
 		return result, nil
+	}
+
+	if err := r.limiter.wait(ctx); err != nil {
+		result.OK = false
+		return result, err
 	}
 
 	start := time.Now()

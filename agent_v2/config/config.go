@@ -39,6 +39,7 @@ type AliConfig struct {
 	BaseURL       string `yaml:"baseurl"`
 	AnalysisModel string `yaml:"analysis_model"`
 	TestModel     string `yaml:"test_model"`
+	AmapModel     string `yaml:"amap_model"`
 	ApiKey        string `yaml:"apikey"`
 }
 
@@ -65,6 +66,7 @@ type AmapConfig struct {
 	FreeOnly       bool            `yaml:"free_only"`
 	Output         string          `yaml:"output"`
 	TimeoutSeconds int             `yaml:"timeout_seconds"`
+	QPS            float64         `yaml:"qps"`
 	Retry          AmapRetryConfig `yaml:"retry"`
 }
 
@@ -79,6 +81,9 @@ func (c AmapConfig) WithDefaults() AmapConfig {
 	}
 	if c.TimeoutSeconds <= 0 {
 		c.TimeoutSeconds = 10
+	}
+	if c.QPS <= 0 {
+		c.QPS = 1
 	}
 	if c.Retry.MaxRetries < 0 {
 		c.Retry.MaxRetries = 0

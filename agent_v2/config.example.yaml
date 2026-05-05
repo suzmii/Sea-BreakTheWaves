@@ -17,11 +17,12 @@ agent:
   preload_session_recall_min_score: 0.60
   read_header_timeout: "5s"
 amap:
-  baseurl: "https://restapi.amap.com/v4"
+  baseurl: "https://restapi.amap.com/v3"
   api_key: "AMAP_MAPS_API_KEY"
   free_only: true
   output: "JSON"
   timeout_seconds: 10
+  qps: 1
   retry:
     max_retries: 2
     backoff_seconds: 0.5
