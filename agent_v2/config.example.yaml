@@ -2,6 +2,7 @@ ali:
   baseurl: "https://dashscope.aliyuncs.com/compatible-mode/v1"
   analysis_model: "deepseek-v4-pro"
   test_model: "kimi-k2.6"
+  amap_model: "kimi-k2.6"
   apikey: "YOUR_LLM_API_KEY"
 
 postgres:
@@ -20,11 +21,12 @@ agent:
   read_header_timeout: "5s"
 
 amap:
-  baseurl: "https://restapi.amap.com/v4"
+  baseurl: "https://restapi.amap.com/v3"
   api_key: "AMAP_MAPS_API_KEY"
   free_only: true
   output: "JSON"
   timeout_seconds: 10
+  qps: 1
   retry:
     max_retries: 2
     backoff_seconds: 0.5
