@@ -1,0 +1,3 @@
+ALTER TABLE articles DROP COLUMN IF EXISTS author;
+ALTER TABLE articles DROP COLUMN IF EXISTS geo_city;
+ALTER TABLE articles DROP COLUMN IF EXISTS publish_time;
